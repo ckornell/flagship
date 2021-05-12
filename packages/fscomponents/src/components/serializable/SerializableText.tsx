@@ -37,17 +37,20 @@ export const FSSerializableText = React.memo<SerializableTextProps>(
       }
     }, [href]);
 
+    const textAlignSelf = textProps?.style?.alignSelf;
+    const viewBoxStyle = {...boxStyle, alignSelf: textAlignSelf};
+
     if (href) {
       return (
         <TouchableOpacity onPress={handlePress}>
-          <View style={boxStyle}>
+          <View style={viewBoxStyle}>
             <Text {...textProps}>{childText}</Text>
           </View>
         </TouchableOpacity>
       );
     }
     return (
-      <View style={boxStyle}>
+      <View style={viewBoxStyle}>
         <Text {...textProps}>{childText}</Text>
       </View>
     );
