@@ -80,6 +80,10 @@ export interface BackToTopComponentProps {
   backToTop: GridScrollToTopFunc;
 }
 
+interface GridItemFormats {
+  spanColumns: number;
+}
+
 export interface GridProps<ItemT>
   extends Pick<
     FlatListProps<ItemT>,
@@ -225,6 +229,11 @@ export interface GridProps<ItemT>
    * Defaults to 175
    */
   minColumnWidth?: number;
+
+  /**
+   * Applies a format to an item. Useful for featured items in a grid.
+   */
+  gridItemFormat?: Record<number, GridItemFormats>;
 }
 
 export interface GridState<ItemT> extends Pick<FlatListProps<ItemT[]>, 'data'> {
@@ -259,6 +268,7 @@ export const Grid = <ItemT, >(props: GridProps<ItemT>) => {
     refreshing,
     rowSeparatorStyle,
     style,
+    gridItemFormat,
     backToTopButtonStyle,
     backToTopContainerStyle,
     backToTopShowAtHeight,
@@ -311,6 +321,29 @@ export const Grid = <ItemT, >(props: GridProps<ItemT>) => {
       return [];
     }
 
+    if (gridItemFormat) {
+      const formatKeys = Object.keys(gridItemFormat);
+      if (formatKeys.length) {
+        const filteredDataset = data?.filter((e, i) => {
+          return formatKeys.indexOf(i.toString()) !== -1;
+        });
+        const originalDataChunked = chunk(filteredDataset, totalColumns);
+        const mappedIndices = formatKeys.map(key => {
+          const keyToNumber = Number(key);
+          return {
+            originalIndex: keyToNumber,
+            insertionIndex: Math.abs(keyToNumber / totalColumns),
+            item: data?.slice(keyToNumber)
+          };
+        });
+
+        mappedIndices.forEach(data => {
+          originalDataChunked.splice(data.insertionIndex, 0, data.item || []);
+        });
+        return originalDataChunked;
+      }
+    }
+
     return chunk(data, totalColumns);
   }, [data, totalColumns]);
 
@@ -353,6 +386,9 @@ export const Grid = <ItemT, >(props: GridProps<ItemT>) => {
     ({ index, item, separators }) => {
       const showRowSeparator = chunkedData?.length > index + 1;
       const columnWidth = Math.floor((100 / totalColumns) * 100) / 100;
+      // @todo: ckornell - here find a calculation that gives a width by percentage.
+      // total width (100) / totalcolumns and then multiply by spanColumns
+      // to get the width of column.
 
       return (
         <View style={gridStyle.row}>
